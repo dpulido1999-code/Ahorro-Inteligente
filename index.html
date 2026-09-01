@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparador de Precios - Ahorro Inteligente</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .unit-selector {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .unit-selector button {
+      padding: 4px 12px;
+      border: 2px solid #d1d5db;
+      border-radius: 6px;
+      background: white;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #6b7280;
+    }
+    .unit-selector button.active {
+      border-color: #2563eb;
+      background: #2563eb;
+      color: white;
+    }
+    .unit-selector button:hover:not(.active) {
+      border-color: #9ca3af;
+      background: #f3f4f6;
+    }
+    .product-card.premium-card {
+      border: 2px solid #f59e0b;
+    }
+    .badge-premium {
+      font-size: 0.65rem;
+      background: #f59e0b;
+      color: white;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <header>
+      <h1>🏷️ Ahorro Inteligente</h1>
+      <p>Compara productos y descubre cuál te conviene más.</p>
+    </header>
+
+    <!-- BOTÓN DE INSTALACIÓN -->
+    <button id="btnInstalar" style="display: block; width: 100%; padding: 14px; background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; margin-bottom: 15px; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+      📥 Instalar App en el celular
+    </button>
+
+    <main>
+
+      <!-- INDICADOR DE VERSIÓN -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px 15px; background: #f1f5f9; border-radius: 10px;">
+        <span style="font-size: 0.85rem; color: #64748b;">📱 Versión Gratis</span>
+        <button id="btnPremium" style="padding: 6px 16px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 20px; font-weight: bold; font-size: 13px; cursor: pointer;">
+          ⭐ Premium
+        </button>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- PRODUCTO A (GRATIS) -->
+      <!-- ========================================== -->
+      <section class="card product-card">
+        <h2>🛒 Producto A</h2>
+        <div class="input-group">
+          <label for="priceA">Precio ($):</label>
+          <input type="number" id="priceA" placeholder="Ej: 15000" step="any" value="15000">
+        </div>
+        <div class="input-group">
+          <label for="qtyA">Cantidad:</label>
+          <input type="number" id="qtyA" placeholder="Ej: 300" step="any" value="300">
+        </div>
+        <div class="input-group">
+          <label>Unidad de medida:</label>
+          <div class="unit-selector" id="unitA">
+            <button data-unit="unidades">📦 Unidades</button>
+            <button data-unit="gramos">⚖️ Gramos (g)</button>
+            <button data-unit="kilogramos" class="active">⚖️ Kilogramos (kg)</button>
+            <button data-unit="mililitros">💧 Mililitros (ml)</button>
+            <button data-unit="litros">💧 Litros (L)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- PRODUCTO B (GRATIS) -->
+      <!-- ========================================== -->
+      <section class="card product-card">
+        <h2>🛒 Producto B</h2>
+        <div class="input-group">
+          <label for="priceB">Precio ($):</label>
+          <input type="number" id="priceB" placeholder="Ej: 9500" step="any" value="9500">
+        </div>
+        <div class="input-group">
+          <label for="qtyB">Cantidad:</label>
+          <input type="number" id="qtyB" placeholder="Ej: 150" step="any" value="150">
+        </div>
+        <div class="input-group">
+          <label>Unidad de medida:</label>
+          <div class="unit-selector" id="unitB">
+            <button data-unit="unidades">📦 Unidades</button>
+            <button data-unit="gramos" class="active">⚖️ Gramos (g)</button>
+            <button data-unit="kilogramos">⚖️ Kilogramos (kg)</button>
+            <button data-unit="mililitros">💧 Mililitros (ml)</button>
+            <button data-unit="litros">💧 Litros (L)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- PRODUCTOS PREMIUM (ocultos) -->
+      <!-- ========================================== -->
+      <div id="premiumProducts" style="display: none;">
+
+        <!-- PRODUCTO C -->
+        <section class="card product-card premium-card">
+          <h2>🛒 Producto C <span class="badge-premium">⭐ Premium</span></h2>
+          <div class="input-group">
+            <label for="priceC">Precio ($):</label>
+            <input type="number" id="priceC" placeholder="Ej: 12000" step="any" value="12000">
+          </div>
+          <div class="input-group">
+            <label for="qtyC">Cantidad:</label>
+            <input type="number" id="qtyC" placeholder="Ej: 200" step="any" value="200">
+          </div>
+          <div class="input-group">
+            <label>Unidad de medida:</label>
+            <div class="unit-selector" id="unitC">
+              <button data-unit="unidades">📦 Unidades</button>
+              <button data-unit="gramos">⚖️ Gramos (g)</button>
+              <button data-unit="kilogramos" class="active">⚖️ Kilogramos (kg)</button>
+              <button data-unit="mililitros">💧 Mililitros (ml)</button>
+              <button data-unit="litros">💧 Litros (L)</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRODUCTO D -->
+        <section class="card product-card premium-card">
+          <h2>🛒 Producto D <span class="badge-premium">⭐ Premium</span></h2>
+          <div class="input-group">
+            <label for="priceD">Precio ($):</label>
+            <input type="number" id="priceD" placeholder="Ej: 18000" step="any" value="18000">
+          </div>
+          <div class="input-group">
+            <label for="qtyD">Cantidad:</label>
+            <input type="number" id="qtyD" placeholder="Ej: 350" step="any" value="350">
+          </div>
+          <div class="input-group">
+            <label>Unidad de medida:</label>
+            <div class="unit-selector" id="unitD">
+              <button data-unit="unidades">📦 Unidades</button>
+              <button data-unit="gramos">⚖️ Gramos (g)</button>
+              <button data-unit="kilogramos" class="active">⚖️ Kilogramos (kg)</button>
+              <button data-unit="mililitros">💧 Mililitros (ml)</button>
+              <button data-unit="litros">💧 Litros (L)</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRODUCTO E -->
+        <section class="card product-card premium-card">
+          <h2>🛒 Producto E <span class="badge-premium">⭐ Premium</span></h2>
+          <div class="input-group">
+            <label for="priceE">Precio ($):</label>
+            <input type="number" id="priceE" placeholder="Ej: 25000" step="any" value="25000">
+          </div>
+          <div class="input-group">
+            <label for="qtyE">Cantidad:</label>
+            <input type="number" id="qtyE" placeholder="Ej: 500" step="any" value="500">
+          </div>
+          <div class="input-group">
+            <label>Unidad de medida:</label>
+            <div class="unit-selector" id="unitE">
+              <button data-unit="unidades">📦 Unidades</button>
+              <button data-unit="gramos">⚖️ Gramos (g)</button>
+              <button data-unit="kilogramos" class="active">⚖️ Kilogramos (kg)</button>
+              <button data-unit="mililitros">💧 Mililitros (ml)</button>
+              <button data-unit="litros">💧 Litros (L)</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- BOTONES: COMPARAR -->
+      <div style="display: flex; gap: 10px; margin: 15px 0;">
+        <button id="compareBtn" class="btn-primary" style="flex: 1;">🔄 Comparar 2 productos</button>
+        <button id="comparePremiumBtn" style="flex: 1; padding: 14px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); display: none;">
+          ⭐ Comparar hasta 5 productos
+        </button>
+      </div>
+
+      <!-- ÁREA DE RESULTADO -->
+      <section id="resultCard" class="card result-card hidden">
+        <h3 id="resultTitle">Resultado</h3>
+        <div id="resultText"></div>
+        <div id="savingsText" class="highlight-savings"></div>
+      </section>
+
+      <!-- HOTMART - QR -->
+      <section class="card" style="background: linear-gradient(135deg, #fef9c3, #fde68a); border: 2px solid #f59e0b; margin-top: 15px; text-align: center;">
+        <h3 style="color: #92400e; font-size: 1.1rem;">📚 Ahorra aún más</h3>
+        <p style="font-size: 0.9rem; color: #78350f; margin-bottom: 12px;">
+          Descubre las <strong>mejores estrategias</strong> para ahorrar en el supermercado 
+          con nuestra guía completa en PDF.
+        </p>
+        <div style="text-align: center; margin: 10px 0;">
+          <p style="font-size: 0.85rem; color: #92400e; margin-bottom: 8px;">📱 Escanea con tu celular y compra al instante</p>
+          <img src="qr-hotmart.png" alt="Código QR" style="width: 180px; height: 180px; border-radius: 12px; border: 3px solid #f59e0b; padding: 5px; background: white;">
+        </div>
+        <p style="font-size: 0.8rem; color: #92400e; margin-top: 10px;">💰 Precio: $10 USD</p>
+        <p style="font-size: 0.75rem; color: #92400e; margin-top: 5px;">Entrega inmediata por email | 100% digital</p>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL PREMIUM -->
+  <div id="premiumModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 20px;">
+    <div style="background: white; border-radius: 24px; max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative;">
+      <button id="closeModal" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer; color: #999;">✕</button>
+      <h2 style="font-size: 1.8rem; color: #1e293b; text-align: center;">⭐ Premium</h2>
+      <p style="text-align: center; color: #64748b; margin-bottom: 20px;">Desbloquea todas las funciones avanzadas</p>
+      <div style="text-align: center; margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px;">
+        <span style="font-size: 2rem; font-weight: 800; color: #92400e;">$5 USD</span>
+        <span style="font-size: 0.9rem; color: #92400e; display: block;">Pago único · Acceso permanente</span>
+      </div>
+      <div style="margin: 20px 0;">
+        <h3 style="font-size: 1rem; color: #1e293b; margin-bottom: 12px;">🚀 Funciones incluidas:</h3>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border-radius: 10px;">
+            <span style="font-size: 1.5rem;">📊</span>
+            <div><strong style="display: block; font-size: 0.95rem;">Compara hasta 5 productos</strong><span style="font-size: 0.8rem; color: #64748b;">Compara 3, 4 o 5 productos al mismo tiempo</span></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border-radius: 10px;">
+            <span style="font-size: 1.5rem;">📈</span>
+            <div><strong style="display: block; font-size: 0.95rem;">Ranking de productos</strong><span style="font-size: 0.8rem; color: #64748b;">Ordena del más barato al más caro</span></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border-radius: 10px;">
+            <span style="font-size: 1.5rem;">📥</span>
+            <div><strong style="display: block; font-size: 0.95rem;">Exportar resultados</strong><span style="font-size: 0.8rem; color: #64748b;">Descarga los resultados en PDF</span></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border-radius: 10px;">
+            <span style="font-size: 1.5rem;">🔔</span>
+            <div><strong style="display: block; font-size: 0.95rem;">Alertas de precios</strong><span style="font-size: 0.8rem; color: #64748b;">Recibe notificaciones cuando hay ofertas</span></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border-radius: 10px;">
+            <span style="font-size: 1.5rem;">🚫</span>
+            <div><strong style="display: block; font-size: 0.95rem;">Sin anuncios</strong><span style="font-size: 0.8rem; color: #64748b;">Experiencia sin interrupciones</span></div>
+          </div>
+        </div>
+      </div>
+      <a href="https://hotmart.com/es-es/marketplace/productos/tu-producto-aqui" target="_blank" style="display: block; width: 100%; padding: 16px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 14px; font-size: 1.1rem; font-weight: bold; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);">
+        💰 Comprar Premium → $5 USD
+      </a>
+      <p style="font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 12px;">Pago seguro con Hotmart · Entrega inmediata</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
