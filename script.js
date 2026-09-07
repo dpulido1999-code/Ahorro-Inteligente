@@ -24,7 +24,7 @@ const btnEscanear = document.getElementById('btnEscanear');
 
 // Variables del escáner
 const readerDiv = document.getElementById('reader');
-let html5QrCode = null;
+let html5QrcodeScanner = null;
 let escaneando = false;
 
 // Contador para productos ilimitados (F, G, H...)
@@ -63,14 +63,13 @@ function activarPremiumVisual() {
 
     addProductBtn.style.display = 'block';
 
-    // 🔥 CORRECCIÓN: Ocultar el botón verde cuando es Premium
-    const btnCompararGratis = document.getElementById('compareBtnFree');
-    if (btnCompararGratis) btnCompararGratis.style.display = 'none';
-
     const btnCompararPremium = document.getElementById('compareAllBtn');
     if (btnCompararPremium) btnCompararPremium.style.display = 'block';
 
     btnEscanear.style.display = 'block';
+
+    const btnCompararGratis = document.getElementById('compareBtnFree');
+    if (btnCompararGratis) btnCompararGratis.style.display = 'none';
 
     const btnDarkMode = document.getElementById('darkModeBtn');
     if (btnDarkMode) btnDarkMode.style.display = 'block';
@@ -422,7 +421,7 @@ btnInstalar.addEventListener('click', () => {
     }
 });
 
-// 16. Función para abrir el escáner (Con cámara trasera forzada)
+// 16. Función para abrir el escáner (Con retraso para Android)
 function abrirEscaneo() {
     // 🔥 SI NO ES PREMIUM, SE ABRE EL MODAL DE COMPRA
     if (!verificarPremium()) {
@@ -435,43 +434,42 @@ function abrirEscaneo() {
         return;
     }
 
-    readerDiv.style.display = 'block';
-    
-    // Usar Html5Qrcode directamente para más control
-    html5QrCode = new Html5Qrcode("reader");
-    
-    html5QrCode.start(
-        { facingMode: "environment" }, // Fuerza cámara trasera
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText, decodedResult) => {
-            // Éxito al escanear
-            alert('📷 ¡Código escaneado! ' + decodedText);
-            buscarProductoPorCodigo(decodedText);
-            
-            // Detener y cerrar
-            html5QrCode.stop().then(() => {
-                html5QrCode.clear();
-                readerDiv.style.display = 'none';
-                escaneando = false;
-            }).catch(err => console.log(err));
-        },
-        (errorMessage) => {
-            // Ignorar errores de escaneo
-        }
-    ).catch(err => {
-        console.error("Error al iniciar la cámara:", err);
-        alert("No se pudo abrir la cámara. Verifica que estés usando HTTPS o localhost, y tengas permisos.");
-    });
-    
-    escaneando = true;
+    // Esperar 500ms para que el navegador se "caliente" en Android
+    setTimeout(() => {
+        readerDiv.style.display = 'block';
+        
+        // Usar Scanner (más estable en Android)
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { 
+                fps: 10, 
+                qrbox: { width: 250, height: 250 },
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_E
+                ]
+            }, 
+            false
+        );
+
+        html5QrcodeScanner.render(onScanSuccess, onScanError);
+        escaneando = true;
+    }, 500);
 }
 
+function onScanSuccess(decodedText, decodedResult) {
+    alert('📷 ¡Código escaneado! ' + decodedText);
+    buscarProductoPorCodigo(decodedText);
+    cerrarEscaneo();
+}
+
+function onScanError(errorMessage) {}
+
 function cerrarEscaneo() {
-    if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-            readerDiv.style.display = 'none';
-        }).catch(err => console.log(err));
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().catch(err => console.log(err));
     }
     readerDiv.style.display = 'none';
     escaneando = false;
