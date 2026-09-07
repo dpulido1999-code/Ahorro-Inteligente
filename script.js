@@ -22,9 +22,9 @@ const addProductBtn = document.getElementById('addProductBtn');
 const premiumWelcome = document.getElementById('premiumWelcome');
 const btnEscanear = document.getElementById('btnEscanear');
 
-// ⚠️ VARIABLES DEL ESCÁNER
+// Variables del escáner
 const readerDiv = document.getElementById('reader');
-let html5QrcodeScanner = null;
+let html5QrCode = null;
 let escaneando = false;
 
 // Contador para productos ilimitados (F, G, H...)
@@ -63,15 +63,14 @@ function activarPremiumVisual() {
 
     addProductBtn.style.display = 'block';
 
+    // 🔥 CORRECCIÓN: Ocultar el botón verde cuando es Premium
+    const btnCompararGratis = document.getElementById('compareBtnFree');
+    if (btnCompararGratis) btnCompararGratis.style.display = 'none';
+
     const btnCompararPremium = document.getElementById('compareAllBtn');
     if (btnCompararPremium) btnCompararPremium.style.display = 'block';
 
-    // Mostrar el botón de escaneo
     btnEscanear.style.display = 'block';
-
-    // Ocultar el botón verde (solo Premium)
-    const btnCompararGratis = document.getElementById('compareBtnFree');
-    if (btnCompararGratis) btnCompararGratis.style.display = 'none';
 
     const btnDarkMode = document.getElementById('darkModeBtn');
     if (btnDarkMode) btnDarkMode.style.display = 'block';
@@ -131,17 +130,6 @@ function comparar() {
     const costoUnitarioA = convertirAPrecioPorUnidadBase(precioA, cantidadA, unidadesA);
     const costoUnitarioB = convertirAPrecioPorUnidadBase(precioB, cantidadB, unidadesB);
 
-    let unidadTexto = 'unidad base';
-    if (costoUnitarioA < costoUnitarioB) {
-        if (unidadesA === 'kilogramos' || unidadesA === 'gramos') unidadTexto = 'gramo';
-        else if (unidadesA === 'litros' || unidadesA === 'mililitros') unidadTexto = 'mililitro';
-        else unidadTexto = 'unidad';
-    } else {
-        if (unidadesB === 'kilogramos' || unidadesB === 'gramos') unidadTexto = 'gramo';
-        else if (unidadesB === 'litros' || unidadesB === 'mililitros') unidadTexto = 'mililitro';
-        else unidadTexto = 'unidad';
-    }
-
     let resultadoHTML = '';
     let ahorroHTML = '';
 
@@ -149,20 +137,20 @@ function comparar() {
         resultadoHTML = `
             <div class="winner-box">
                 <h3 style="color: #059669; font-size: 1.4rem;">🏆 ¡El Producto A es más barato!</h3>
-                <p>Cuesta <strong>$${costoUnitarioA.toFixed(2)}</strong> por ${unidadTexto} en <strong>${tiendaA}</strong>, mientras que B cuesta $${costoUnitarioB.toFixed(2)} por ${unidadTexto} en <strong>${tiendaB}</strong>.</p>
+                <p>Cuesta <strong>$${Math.round(costoUnitarioA).toLocaleString('es-CO')}</strong> / unidad en <strong>${tiendaA}</strong>, mientras que B cuesta $${Math.round(costoUnitarioB).toLocaleString('es-CO')} / unidad en <strong>${tiendaB}</strong>.</p>
             </div>
         `;
         const ahorroTotal = (costoUnitarioB - costoUnitarioA) * cantidadA;
-        ahorroHTML = `<p>💰 ¡Ahorras $${ahorroTotal.toFixed(2)} en esta compra!</p>`;
+        ahorroHTML = `<p>💰 ¡Ahorras $${ahorroTotal.toLocaleString('es-CO')} en esta compra!</p>`;
     } else if (costoUnitarioB < costoUnitarioA) {
         resultadoHTML = `
             <div class="winner-box">
                 <h3 style="color: #059669; font-size: 1.4rem;">🏆 ¡El Producto B es más barato!</h3>
-                <p>Cuesta <strong>$${costoUnitarioB.toFixed(2)}</strong> por ${unidadTexto} en <strong>${tiendaB}</strong>, mientras que A cuesta $${costoUnitarioA.toFixed(2)} por ${unidadTexto} en <strong>${tiendaA}</strong>.</p>
+                <p>Cuesta <strong>$${Math.round(costoUnitarioB).toLocaleString('es-CO')}</strong> / unidad en <strong>${tiendaB}</strong>, mientras que A cuesta $${Math.round(costoUnitarioA).toLocaleString('es-CO')} / unidad en <strong>${tiendaA}</strong>.</p>
             </div>
         `;
         const ahorroTotal = (costoUnitarioA - costoUnitarioB) * cantidadB;
-        ahorroHTML = `<p>💰 ¡Ahorras $${ahorroTotal.toFixed(2)} en esta compra!</p>`;
+        ahorroHTML = `<p>💰 ¡Ahorras $${ahorroTotal.toLocaleString('es-CO')} en esta compra!</p>`;
     } else {
         resultadoHTML = `<div style="text-align:center; font-weight:bold;">🤝 Ambos productos tienen el mismo costo por unidad.</div>`;
     }
@@ -171,6 +159,10 @@ function comparar() {
     savingsText.innerHTML = ahorroHTML;
     resultCard.classList.remove('hidden');
     guardarHistorial(priceA.value, qtyA.value, unidadesA, priceB.value, qtyB.value, unidadesB);
+    
+    // Reproducir sonido de éxito
+    const sonido = document.getElementById('successSound');
+    if (sonido) sonido.play();
 }
 
 // 7. Botones y funciones básicas
@@ -228,7 +220,6 @@ function abrirModal() {
 
 // Función para agregar productos ilimitados
 function agregarProducto() {
-    // Generar letra (F, G, H...)
     const letra = String.fromCharCode(70 + dynamicProductCount); 
     
     const nuevoProducto = `
@@ -288,7 +279,7 @@ document.getElementById('premiumModal').addEventListener('click', (e) => {
     }
 });
 
-// 11. Función Premium: Comparar Todos (Sin límites) y Ranking
+// 11. Función Premium: Comparar Todos (Sin límites)
 function compararPremium() {
     const productos = [
         { nombre: 'A', precio: document.getElementById('priceA').value, cantidad: document.getElementById('qtyA').value, unidad: unidadesA },
@@ -324,10 +315,12 @@ function compararPremium() {
         const medalla = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📦';
         const estilo = index === 0 ? 'background:#ecfdf5; border:2px solid #059669;' : 'background:#f8fafc;';
         
+        const costoMostrar = Math.round(p.costoUnit).toLocaleString('es-CO');
+        
         html += `
             <div style="${estilo} padding: 12px; border-radius: 10px; margin-bottom: 10px;">
                 <strong>${medalla} Producto ${p.nombre}</strong> 
-                <span style="float:right; font-weight:bold;">$${p.costoUnit.toFixed(2)} / ${p.unidad.replace('s', '')}</span>
+                <span style="float:right; font-weight:bold;">$${costoMostrar} / unidad</span>
             </div>
         `;
     });
@@ -335,6 +328,10 @@ function compararPremium() {
     resultText.innerHTML = html;
     savingsText.innerHTML = '';
     resultCard.classList.remove('hidden');
+    
+    // Reproducir sonido de éxito
+    const sonido = document.getElementById('successSound');
+    if (sonido) sonido.play();
 }
 
 // 12. Función Premium: Modo Oscuro manual
@@ -371,14 +368,14 @@ function mostrarListaCompras() {
             <div class="shopping-item">
                 <div>
                     <strong>Producto ${item.nombre}</strong> - ${item.tienda}<br>
-                    <small>Precio total: $${item.precioTotal}</small>
+                    <small>Precio total: $${Math.round(item.precioTotal).toLocaleString('es-CO')}</small>
                 </div>
                 <button onclick="eliminarDeLista(${index})">🗑️</button>
             </div>
         `;
     });
     
-    html += `<div style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 1.2rem;">💰 Total: $${total.toFixed(2)}</div>`;
+    html += `<div style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 1.2rem;">💰 Total: $${Math.round(total).toLocaleString('es-CO')}</div>`;
     historyContainer.innerHTML = html;
 }
 
@@ -425,8 +422,14 @@ btnInstalar.addEventListener('click', () => {
     }
 });
 
-// 16. Función para abrir el escáner (Solo Premium)
+// 16. Función para abrir el escáner (Con cámara trasera forzada)
 function abrirEscaneo() {
+    // 🔥 SI NO ES PREMIUM, SE ABRE EL MODAL DE COMPRA
+    if (!verificarPremium()) {
+        abrirModal();
+        return;
+    }
+
     if (escaneando) {
         cerrarEscaneo();
         return;
@@ -434,36 +437,41 @@ function abrirEscaneo() {
 
     readerDiv.style.display = 'block';
     
-    html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", 
-        { 
-            fps: 10, 
-            qrbox: { width: 250, height: 250 },
-            formatsToSupport: [
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.UPC_E
-            ]
-        }, 
-        false
-    );
-
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
+    // Usar Html5Qrcode directamente para más control
+    html5QrCode = new Html5Qrcode("reader");
+    
+    html5QrCode.start(
+        { facingMode: "environment" }, // Fuerza cámara trasera
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText, decodedResult) => {
+            // Éxito al escanear
+            alert('📷 ¡Código escaneado! ' + decodedText);
+            buscarProductoPorCodigo(decodedText);
+            
+            // Detener y cerrar
+            html5QrCode.stop().then(() => {
+                html5QrCode.clear();
+                readerDiv.style.display = 'none';
+                escaneando = false;
+            }).catch(err => console.log(err));
+        },
+        (errorMessage) => {
+            // Ignorar errores de escaneo
+        }
+    ).catch(err => {
+        console.error("Error al iniciar la cámara:", err);
+        alert("No se pudo abrir la cámara. Verifica que estés usando HTTPS o localhost, y tengas permisos.");
+    });
+    
     escaneando = true;
 }
 
-function onScanSuccess(decodedText, decodedResult) {
-    alert('📷 ¡Código escaneado! ' + decodedText);
-    buscarProductoPorCodigo(decodedText);
-    cerrarEscaneo();
-}
-
-function onScanError(errorMessage) {}
-
 function cerrarEscaneo() {
-    if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear().catch(err => console.log(err));
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+            readerDiv.style.display = 'none';
+        }).catch(err => console.log(err));
     }
     readerDiv.style.display = 'none';
     escaneando = false;
