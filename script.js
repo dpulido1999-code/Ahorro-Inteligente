@@ -1,251 +1,499 @@
-// ============================================================
-// 1. FUNCIÓN PARA OBTENER LA UNIDAD SELECCIONADA
-// ============================================================
-function getSelectedUnit(unitContainerId) {
-  const container = document.getElementById(unitContainerId);
-  const activeBtn = container.querySelector('button.active');
-  return activeBtn ? activeBtn.dataset.unit : 'unidades';
+// Variables globales
+let unidadesA = 'kilogramos';
+let unidadesB = 'gramos';
+let tiendaA = 'D1';
+let tiendaB = 'D1';
+
+// Elementos del DOM
+const priceA = document.getElementById('priceA');
+const qtyA = document.getElementById('qtyA');
+const priceB = document.getElementById('priceB');
+const qtyB = document.getElementById('qtyB');
+const resultCard = document.getElementById('resultCard');
+const resultText = document.getElementById('resultText');
+const savingsText = document.getElementById('savingsText');
+const historyContainer = document.getElementById('historyContainer');
+const shoppingListContainer = document.getElementById('shoppingListContainer');
+
+// Elementos Premium
+const premiumProducts = document.getElementById('premiumProducts');
+const dynamicContainer = document.getElementById('dynamicContainer');
+const addProductBtn = document.getElementById('addProductBtn');
+const premiumWelcome = document.getElementById('premiumWelcome');
+const btnEscanear = document.getElementById('btnEscanear');
+
+// ⚠️ VARIABLES DEL ESCÁNER
+const readerDiv = document.getElementById('reader');
+let html5QrcodeScanner = null;
+let escaneando = false;
+
+// Contador para productos ilimitados (F, G, H...)
+let dynamicProductCount = 0;
+
+// 1. Verificar si el Premium sigue activo (1 mes)
+function verificarPremium() {
+    const fechaExpiracion = localStorage.getItem('premiumExpiracion');
+    if (!fechaExpiracion) return false;
+    const hoy = new Date();
+    const expiracion = new Date(fechaExpiracion);
+    if (hoy < expiracion) {
+        return true;
+    } else {
+        localStorage.removeItem('premiumExpiracion');
+        return false;
+    }
 }
 
-function getUnitLabel(unit) {
-  const labels = {
-    'unidades': 'unidad',
-    'gramos': 'g',
-    'kilogramos': 'kg',
-    'mililitros': 'ml',
-    'litros': 'L'
-  };
-  return labels[unit] || 'unidad';
+// 2. Guardar la expiración (1 mes = 30 días)
+function guardarExpiracionPremium() {
+    const fechaActual = new Date();
+    fechaActual.setDate(fechaActual.getDate() + 30);
+    localStorage.setItem('premiumExpiracion', fechaActual.toISOString());
 }
 
-// ============================================================
-// 2. SELECTORES DE UNIDAD - CLICK PARA CAMBIAR
-// ============================================================
-document.querySelectorAll('.unit-selector').forEach(container => {
-  container.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', function() {
-      container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
+// 3. Función para desbloquear todo visualmente
+function activarPremiumVisual() {
+    premiumProducts.style.filter = 'none';
+    premiumProducts.style.pointerEvents = 'auto';
+    premiumProducts.style.userSelect = 'auto';
+    premiumProducts.style.opacity = '1';
+    
+    const overlay = document.querySelector('.lock-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    addProductBtn.style.display = 'block';
+
+    const btnCompararPremium = document.getElementById('compareAllBtn');
+    if (btnCompararPremium) btnCompararPremium.style.display = 'block';
+
+    // Mostrar el botón de escaneo
+    btnEscanear.style.display = 'block';
+
+    // Ocultar el botón verde (solo Premium)
+    const btnCompararGratis = document.getElementById('compareBtnFree');
+    if (btnCompararGratis) btnCompararGratis.style.display = 'none';
+
+    const btnDarkMode = document.getElementById('darkModeBtn');
+    if (btnDarkMode) btnDarkMode.style.display = 'block';
+
+    const hotmartAd = document.getElementById('hotmartAd');
+    if (hotmartAd) hotmartAd.style.display = 'none';
+
+    const hotmartBtnPremium = document.getElementById('hotmartBtnPremium');
+    if (hotmartBtnPremium) hotmartBtnPremium.style.display = 'block';
+
+    premiumWelcome.style.display = 'block';
+}
+
+// 4. Manejo de selección de unidades
+function setupUnits(containerId, callback) {
+    const container = document.getElementById(containerId);
+    container.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            callback(btn.dataset.unit);
+        });
     });
-  });
-});
-
-// ============================================================
-// 3. FUNCIÓN PARA CONVERTIR A UNIDAD BASE (GRAMOS O ML)
-// ============================================================
-function convertirAUnidadBase(cantidad, unidad) {
-  // Para peso: convertir todo a gramos (g)
-  if (unidad === 'kilogramos') {
-    return cantidad * 1000; // 1 kg = 1000 g
-  }
-  if (unidad === 'gramos') {
-    return cantidad; // ya está en gramos
-  }
-  // Para volumen: convertir todo a mililitros (ml)
-  if (unidad === 'litros') {
-    return cantidad * 1000; // 1 L = 1000 ml
-  }
-  if (unidad === 'mililitros') {
-    return cantidad; // ya está en ml
-  }
-  // Para unidades: no convertir
-  return cantidad;
 }
 
-// ============================================================
-// 4. FUNCIÓN PARA OBTENER LA ETIQUETA DE UNIDAD BASE
-// ============================================================
-function getUnidadBaseLabel(unidad) {
-  if (unidad === 'kilogramos' || unidad === 'gramos') {
-    return 'g';
-  }
-  if (unidad === 'litros' || unidad === 'mililitros') {
-    return 'ml';
-  }
-  return 'unidad';
+// Selección de tiendas
+document.getElementById('tiendaA').addEventListener('change', (e) => tiendaA = e.target.value);
+document.getElementById('tiendaB').addEventListener('change', (e) => tiendaB = e.target.value);
+
+setupUnits('unitA', (unit) => unidadesA = unit);
+setupUnits('unitB', (unit) => unidadesB = unit);
+setupUnits('unitC', (unit) => { /* Default kg */ });
+setupUnits('unitD', (unit) => { /* Default kg */ });
+setupUnits('unitE', (unit) => { /* Default kg */ });
+
+// 5. Función para convertir todo a un valor base
+function convertirAPrecioPorUnidadBase(precio, cantidad, unidad) {
+    let cantidadBase = cantidad;
+    if (unidad === 'kilogramos') cantidadBase = cantidad * 1000;
+    else if (unidad === 'litros') cantidadBase = cantidad * 1000;
+    if (cantidadBase <= 0) return null;
+    return precio / cantidadBase;
 }
 
-// ============================================================
-// 5. COMPARADOR GRATIS (2 productos) - CORREGIDO
-// ============================================================
-document.getElementById('compareBtn').addEventListener('click', function () {
-  const priceA = parseFloat(document.getElementById('priceA').value);
-  const qtyA = parseFloat(document.getElementById('qtyA').value);
-  const priceB = parseFloat(document.getElementById('priceB').value);
-  const qtyB = parseFloat(document.getElementById('qtyB').value);
+// 6. Comparar 2 Productos (Gratis)
+function comparar() {
+    if (!priceA.value || !qtyA.value || !priceB.value || !qtyB.value) {
+        alert('⚠️ Por favor, completa todos los campos de Precio y Cantidad.');
+        return;
+    }
 
-  const unitA = getSelectedUnit('unitA');
-  const unitB = getSelectedUnit('unitB');
+    const precioA = parseFloat(priceA.value);
+    const cantidadA = parseFloat(qtyA.value);
+    const precioB = parseFloat(priceB.value);
+    const cantidadB = parseFloat(qtyB.value);
 
-  // CONVERTIR a unidad base ANTES de calcular el precio por unidad
-  const qtyBaseA = convertirAUnidadBase(qtyA, unitA);
-  const qtyBaseB = convertirAUnidadBase(qtyB, unitB);
+    const costoUnitarioA = convertirAPrecioPorUnidadBase(precioA, cantidadA, unidadesA);
+    const costoUnitarioB = convertirAPrecioPorUnidadBase(precioB, cantidadB, unidadesB);
 
-  const labelBase = getUnidadBaseLabel(unitA);
+    let unidadTexto = 'unidad base';
+    if (costoUnitarioA < costoUnitarioB) {
+        if (unidadesA === 'kilogramos' || unidadesA === 'gramos') unidadTexto = 'gramo';
+        else if (unidadesA === 'litros' || unidadesA === 'mililitros') unidadTexto = 'mililitro';
+        else unidadTexto = 'unidad';
+    } else {
+        if (unidadesB === 'kilogramos' || unidadesB === 'gramos') unidadTexto = 'gramo';
+        else if (unidadesB === 'litros' || unidadesB === 'mililitros') unidadTexto = 'mililitro';
+        else unidadTexto = 'unidad';
+    }
 
-  const resultCard = document.getElementById('resultCard');
-  const resultTitle = document.getElementById('resultTitle');
-  const resultText = document.getElementById('resultText');
-  const savingsText = document.getElementById('savingsText');
+    let resultadoHTML = '';
+    let ahorroHTML = '';
 
-  if (isNaN(priceA) || isNaN(qtyA) || isNaN(priceB) || isNaN(qtyB) || qtyA <= 0 || qtyB <= 0) {
-    alert('⚠️ Por favor, ingresa precios y cantidades válidos mayores a cero.');
-    return;
-  }
+    if (costoUnitarioA < costoUnitarioB) {
+        resultadoHTML = `
+            <div class="winner-box">
+                <h3 style="color: #059669; font-size: 1.4rem;">🏆 ¡El Producto A es más barato!</h3>
+                <p>Cuesta <strong>$${costoUnitarioA.toFixed(2)}</strong> por ${unidadTexto} en <strong>${tiendaA}</strong>, mientras que B cuesta $${costoUnitarioB.toFixed(2)} por ${unidadTexto} en <strong>${tiendaB}</strong>.</p>
+            </div>
+        `;
+        const ahorroTotal = (costoUnitarioB - costoUnitarioA) * cantidadA;
+        ahorroHTML = `<p>💰 ¡Ahorras $${ahorroTotal.toFixed(2)} en esta compra!</p>`;
+    } else if (costoUnitarioB < costoUnitarioA) {
+        resultadoHTML = `
+            <div class="winner-box">
+                <h3 style="color: #059669; font-size: 1.4rem;">🏆 ¡El Producto B es más barato!</h3>
+                <p>Cuesta <strong>$${costoUnitarioB.toFixed(2)}</strong> por ${unidadTexto} en <strong>${tiendaB}</strong>, mientras que A cuesta $${costoUnitarioA.toFixed(2)} por ${unidadTexto} en <strong>${tiendaA}</strong>.</p>
+            </div>
+        `;
+        const ahorroTotal = (costoUnitarioA - costoUnitarioB) * cantidadB;
+        ahorroHTML = `<p>💰 ¡Ahorras $${ahorroTotal.toFixed(2)} en esta compra!</p>`;
+    } else {
+        resultadoHTML = `<div style="text-align:center; font-weight:bold;">🤝 Ambos productos tienen el mismo costo por unidad.</div>`;
+    }
 
-  // AHORA ambos precios están en la misma unidad base (g o ml)
-  const unitPriceA = priceA / qtyBaseA;
-  const unitPriceB = priceB / qtyBaseB;
-
-  resultCard.classList.remove('hidden');
-
-  if (unitPriceA < unitPriceB) {
-    const savingsPercent = (((unitPriceB - unitPriceA) / unitPriceB) * 100).toFixed(1);
-    resultTitle.textContent = '🏆 ¡Conviene el Producto A!';
-    resultText.innerHTML = `
-      🥇 Producto A: $${unitPriceA.toFixed(2)} / ${labelBase}<br>
-      🥈 Producto B: $${unitPriceB.toFixed(2)} / ${labelBase}
-    `;
-    savingsText.textContent = `¡Ahorras un ${savingsPercent}% comprando el Producto A!`;
-  } else if (unitPriceB < unitPriceA) {
-    const savingsPercent = (((unitPriceA - unitPriceB) / unitPriceA) * 100).toFixed(1);
-    resultTitle.textContent = '🏆 ¡Conviene el Producto B!';
-    resultText.innerHTML = `
-      🥇 Producto B: $${unitPriceB.toFixed(2)} / ${labelBase}<br>
-      🥈 Producto A: $${unitPriceA.toFixed(2)} / ${labelBase}
-    `;
-    savingsText.textContent = `¡Ahorras un ${savingsPercent}% comprando el Producto B!`;
-  } else {
-    resultTitle.textContent = '⚖️ ¡Mismo Precio!';
-    resultText.innerHTML = `
-      💲 Producto A: $${unitPriceA.toFixed(2)} / ${labelBase}<br>
-      💲 Producto B: $${unitPriceB.toFixed(2)} / ${labelBase}
-    `;
-    savingsText.textContent = 'Ambos productos cuestan exactamente lo mismo por unidad.';
-  }
-});
-
-// ============================================================
-// 6. COMPARADOR PREMIUM (hasta 5 productos) - CORREGIDO
-// ============================================================
-document.getElementById('comparePremiumBtn').addEventListener('click', function () {
-  const products = [
-    { name: 'Producto A', price: parseFloat(document.getElementById('priceA').value), qty: parseFloat(document.getElementById('qtyA').value), unit: getSelectedUnit('unitA') },
-    { name: 'Producto B', price: parseFloat(document.getElementById('priceB').value), qty: parseFloat(document.getElementById('qtyB').value), unit: getSelectedUnit('unitB') },
-    { name: 'Producto C', price: parseFloat(document.getElementById('priceC').value), qty: parseFloat(document.getElementById('qtyC').value), unit: getSelectedUnit('unitC') },
-    { name: 'Producto D', price: parseFloat(document.getElementById('priceD').value), qty: parseFloat(document.getElementById('qtyD').value), unit: getSelectedUnit('unitD') },
-    { name: 'Producto E', price: parseFloat(document.getElementById('priceE').value), qty: parseFloat(document.getElementById('qtyE').value), unit: getSelectedUnit('unitE') }
-  ];
-
-  const validProducts = products.filter(p => !isNaN(p.price) && !isNaN(p.qty) && p.price > 0 && p.qty > 0);
-
-  if (validProducts.length < 3) {
-    alert('⚠️ Para usar la función Premium, ingresa al menos 3 productos válidos.');
-    return;
-  }
-
-  const results = validProducts.map(p => {
-    const qtyBase = convertirAUnidadBase(p.qty, p.unit);
-    const labelBase = getUnidadBaseLabel(p.unit);
-    return {
-      name: p.name,
-      unitPrice: p.price / qtyBase,
-      unitLabel: labelBase,
-    };
-  });
-
-  const sorted = results.sort((a, b) => a.unitPrice - b.unitPrice);
-
-  const resultCard = document.getElementById('resultCard');
-  const resultTitle = document.getElementById('resultTitle');
-  const resultText = document.getElementById('resultText');
-  const savingsText = document.getElementById('savingsText');
-
-  resultCard.classList.remove('hidden');
-  resultTitle.textContent = '🏆 Ranking Premium (de más barato a más caro)';
-
-  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-  let html = `<div style="font-size:0.8rem; color:#6b7280; margin-bottom:8px;">📊 Precio por unidad</div>`;
-  sorted.forEach((item, index) => {
-    const medal = medals[index] || '🔹';
-    const color = index === 0 ? '#16a34a' : index === 1 ? '#f59e0b' : '#ef4444';
-    html += `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #e2e8f0;">
-      <span>${medal} <strong>${item.name}</strong></span>
-      <span style="color:${color}; font-weight:bold;">$${item.unitPrice.toFixed(2)} / ${item.unitLabel}</span>
-    </div>`;
-  });
-
-  const best = sorted[0];
-  const worst = sorted[sorted.length - 1];
-  const savingsPercent = (((worst.unitPrice - best.unitPrice) / worst.unitPrice) * 100).toFixed(1);
-
-  resultText.innerHTML = html;
-  savingsText.innerHTML = `
-    🎯 <strong>${best.name}</strong> es el más barato con $${best.unitPrice.toFixed(2)} / ${best.unitLabel}<br>
-    💰 Ahorras un <strong>${savingsPercent}%</strong> comparado con el más caro (${worst.name})
-  `;
-});
-
-// ============================================================
-// 7. BOTÓN PREMIUM - ABRIR MODAL Y ACTIVAR PRODUCTOS
-// ============================================================
-document.getElementById('btnPremium').addEventListener('click', function() {
-  document.getElementById('premiumModal').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-});
-
-document.getElementById('closeModal').addEventListener('click', function() {
-  document.getElementById('premiumModal').style.display = 'none';
-  document.body.style.overflow = 'auto';
-});
-
-document.getElementById('premiumModal').addEventListener('click', function(e) {
-  if (e.target === this) {
-    this.style.display = 'none';
-    document.body.style.overflow = 'auto';
-  }
-});
-
-// ============================================================
-// 8. DETECTAR SI EL USUARIO YA ES PREMIUM
-// ============================================================
-function checkPremiumStatus() {
-  const isPremium = localStorage.getItem('isPremium') === 'true';
-  const premiumProducts = document.getElementById('premiumProducts');
-  const comparePremiumBtn = document.getElementById('comparePremiumBtn');
-  const btnPremium = document.getElementById('btnPremium');
-  
-  if (isPremium) {
-    premiumProducts.style.display = 'block';
-    comparePremiumBtn.style.display = 'block';
-    btnPremium.textContent = '⭐ Premium ✅';
-    btnPremium.style.background = 'linear-gradient(135deg, #059669, #10b981)';
-    btnPremium.style.cursor = 'default';
-  }
+    resultText.innerHTML = resultadoHTML;
+    savingsText.innerHTML = ahorroHTML;
+    resultCard.classList.remove('hidden');
+    guardarHistorial(priceA.value, qtyA.value, unidadesA, priceB.value, qtyB.value, unidadesB);
 }
 
-checkPremiumStatus();
+// 7. Botones y funciones básicas
+document.getElementById('compareBtnFree').addEventListener('click', comparar);
 
-// ============================================================
-// 9. BOTÓN DE INSTALACIÓN
-// ============================================================
-document.getElementById('btnInstalar').addEventListener('click', function() {
-  const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-  const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-  
-  let mensaje = '';
-  if (isChrome) {
-    mensaje = '📱 En Chrome:\n\n1. Toca los 3 puntos (⋮)\n2. Selecciona "Instalar aplicación"\n3. Confirma la instalación';
-  } else if (isSafari) {
-    mensaje = '📱 En Safari:\n\n1. Toca "Compartir" (⬆️)\n2. Toca "Agregar a pantalla de inicio"\n3. Confirma';
-  } else {
-    mensaje = '📱 Para instalar:\n\n• Chrome: Menú → "Instalar aplicación"\n• Safari: Compartir → "Agregar a pantalla de inicio"';
-  }
-  alert(mensaje);
+document.getElementById('clearBtn').addEventListener('click', () => {
+    ['priceA', 'qtyA', 'priceB', 'qtyB', 'priceC', 'qtyC', 'priceD', 'qtyD', 'priceE', 'qtyE'].forEach(id => document.getElementById(id).value = '');
+    dynamicContainer.innerHTML = '';
+    dynamicProductCount = 0;
+    resultCard.classList.add('hidden');
+    shoppingListContainer.style.display = 'none';
 });
 
-// ============================================================
-// 10. VALORES DE EJEMPLO
-// ============================================================
-console.log('✅ App cargada correctamente');
-console.log('📱 Ahorro Inteligente - Premium con unidades de medida');
+// 8. Historial
+function guardarHistorial(pA, cA, uA, pB, cB, uB) {
+    const historial = JSON.parse(localStorage.getItem('historial') || '[]');
+    historial.unshift({ pA, cA, uA, pB, cB, uB, fecha: new Date().toLocaleString() });
+    if (historial.length > 5) historial.pop();
+    localStorage.setItem('historial', JSON.stringify(historial));
+    mostrarHistorial();
+}
+
+function mostrarHistorial() {
+    const historial = JSON.parse(localStorage.getItem('historial') || '[]');
+    historyContainer.innerHTML = '';
+    if (historial.length === 0) {
+        historyContainer.innerHTML = '<p style="color:#64748b; font-size:0.9rem;">Aún no has hecho comparaciones.</p>';
+        return;
+    }
+    historial.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+            <strong>A: $${item.pA} (${item.cA} ${item.uA})</strong> vs <strong>B: $${item.pB} (${item.cB} ${item.uB})</strong>
+            <br><small>${item.fecha}</small>
+        `;
+        historyContainer.appendChild(div);
+    });
+}
+
+mostrarHistorial();
+
+// 9. Limpiar historial
+document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+    if (confirm('¿Seguro que quieres borrar todo el historial?')) {
+        localStorage.removeItem('historial');
+        mostrarHistorial();
+    }
+});
+
+// 10. Lógica Premium
+function abrirModal() {
+    document.getElementById('premiumModal').style.display = 'flex';
+}
+
+// Función para agregar productos ilimitados
+function agregarProducto() {
+    // Generar letra (F, G, H...)
+    const letra = String.fromCharCode(70 + dynamicProductCount); 
+    
+    const nuevoProducto = `
+        <section class="card product-card premium-card dynamic-premium" id="producto${letra}">
+            <h2>🛒 Producto ${letra} <span class="badge-premium">⭐ Premium</span></h2>
+            <div class="input-group">
+                <label for="price${letra}">Precio ($):</label>
+                <input type="number" id="price${letra}" placeholder="Ej: 15000" step="any">
+            </div>
+            <div class="input-group">
+                <label for="qty${letra}">Cantidad:</label>
+                <input type="number" id="qty${letra}" placeholder="Ej: 300" step="any">
+            </div>
+            <div class="input-group">
+                <label>Unidad de medida:</label>
+                <div class="unit-selector" id="unit${letra}">
+                    <button data-unit="unidades">📦 Unidades</button>
+                    <button data-unit="gramos">⚖️ Gramos (g)</button>
+                    <button data-unit="kilogramos" class="active">⚖️ Kilogramos (kg)</button>
+                    <button data-unit="mililitros">💧 Mililitros (ml)</button>
+                    <button data-unit="litros">💧 Litros (L)</button>
+                </div>
+            </div>
+            <button onclick="eliminarProducto('${letra}')" style="margin-top: 10px; background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">🗑️ Eliminar</button>
+        </section>
+    `;
+
+    dynamicContainer.insertAdjacentHTML('beforeend', nuevoProducto);
+    dynamicProductCount++;
+    
+    setupUnits(`unit${letra}`, (unit) => { /* No hacemos nada especial */ });
+}
+
+function eliminarProducto(letra) {
+    const producto = document.getElementById(`producto${letra}`);
+    if (producto) {
+        producto.remove();
+        dynamicProductCount--;
+    }
+}
+
+// Función para desbloquear Premium (Pago)
+function desbloquearPremium() {
+    guardarExpiracionPremium();
+    activarPremiumVisual();
+    document.getElementById('premiumModal').style.display = 'none';
+    alert('🎉 ¡Premium activado por 1 mes! Disfruta de todas las funciones sin límites.');
+}
+
+document.getElementById('closeModal').addEventListener('click', () => {
+    document.getElementById('premiumModal').style.display = 'none';
+});
+
+document.getElementById('premiumModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('premiumModal')) {
+        document.getElementById('premiumModal').style.display = 'none';
+    }
+});
+
+// 11. Función Premium: Comparar Todos (Sin límites) y Ranking
+function compararPremium() {
+    const productos = [
+        { nombre: 'A', precio: document.getElementById('priceA').value, cantidad: document.getElementById('qtyA').value, unidad: unidadesA },
+        { nombre: 'B', precio: document.getElementById('priceB').value, cantidad: document.getElementById('qtyB').value, unidad: unidadesB },
+        { nombre: 'C', precio: document.getElementById('priceC').value, cantidad: document.getElementById('qtyC').value, unidad: 'kilogramos' },
+        { nombre: 'D', precio: document.getElementById('priceD').value, cantidad: document.getElementById('qtyD').value, unidad: 'kilogramos' },
+        { nombre: 'E', precio: document.getElementById('priceE').value, cantidad: document.getElementById('qtyE').value, unidad: 'kilogramos' }
+    ];
+
+    for (let i = 0; i < dynamicProductCount; i++) {
+        const letra = String.fromCharCode(70 + i);
+        const precio = document.getElementById(`price${letra}`).value;
+        const cantidad = document.getElementById(`qty${letra}`).value;
+        if (precio && cantidad) {
+            productos.push({ nombre: letra, precio, cantidad, unidad: 'kilogramos' });
+        }
+    }
+
+    const validos = productos.filter(p => p.precio && p.cantidad);
+    if (validos.length < 2) {
+        alert('⚠️ Llena al menos 2 productos para comparar.');
+        return;
+    }
+
+    const ranking = validos.map(p => {
+        const costoUnit = convertirAPrecioPorUnidadBase(parseFloat(p.precio), parseFloat(p.cantidad), p.unidad);
+        return { ...p, costoUnit };
+    }).sort((a, b) => a.costoUnit - b.costoUnit);
+
+    let html = '<h3 style="text-align:center; margin-bottom:15px;">🏆 Ranking de Precios</h3>';
+    
+    ranking.forEach((p, index) => {
+        const medalla = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '📦';
+        const estilo = index === 0 ? 'background:#ecfdf5; border:2px solid #059669;' : 'background:#f8fafc;';
+        
+        html += `
+            <div style="${estilo} padding: 12px; border-radius: 10px; margin-bottom: 10px;">
+                <strong>${medalla} Producto ${p.nombre}</strong> 
+                <span style="float:right; font-weight:bold;">$${p.costoUnit.toFixed(2)} / ${p.unidad.replace('s', '')}</span>
+            </div>
+        `;
+    });
+
+    resultText.innerHTML = html;
+    savingsText.innerHTML = '';
+    resultCard.classList.remove('hidden');
+}
+
+// 12. Función Premium: Modo Oscuro manual
+function toggleDarkMode() {
+    const body = document.body;
+    const isDark = body.style.backgroundColor === 'rgb(15, 23, 42)';
+    
+    if (isDark) {
+        body.style.backgroundColor = '#f1f5f9';
+        body.style.color = '#1e293b';
+        document.getElementById('darkModeBtn').innerText = '🌙 Modo Oscuro';
+    } else {
+        body.style.backgroundColor = '#0f172a';
+        body.style.color = '#e2e8f0';
+        document.getElementById('darkModeBtn').innerText = '☀️ Modo Claro';
+    }
+}
+
+// 13. Lista de compras
+function mostrarListaCompras() {
+    const lista = JSON.parse(localStorage.getItem('listaCompras') || '[]');
+    if (lista.length === 0) {
+        alert('Aún no tienes productos guardados.');
+        return;
+    }
+    
+    shoppingListContainer.style.display = 'block';
+    let total = 0;
+    
+    let html = '<h3 style="margin-bottom: 15px;">🛒 Mi Lista de Compras</h3>';
+    lista.forEach((item, index) => {
+        total += parseFloat(item.precioTotal);
+        html += `
+            <div class="shopping-item">
+                <div>
+                    <strong>Producto ${item.nombre}</strong> - ${item.tienda}<br>
+                    <small>Precio total: $${item.precioTotal}</small>
+                </div>
+                <button onclick="eliminarDeLista(${index})">🗑️</button>
+            </div>
+        `;
+    });
+    
+    html += `<div style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 1.2rem;">💰 Total: $${total.toFixed(2)}</div>`;
+    historyContainer.innerHTML = html;
+}
+
+function guardarEnLista(nombre, tienda, precioTotal) {
+    const lista = JSON.parse(localStorage.getItem('listaCompras') || '[]');
+    lista.push({ nombre, tienda, precioTotal });
+    localStorage.setItem('listaCompras', JSON.stringify(lista));
+}
+
+function eliminarDeLista(index) {
+    const lista = JSON.parse(localStorage.getItem('listaCompras') || '[]');
+    lista.splice(index, 1);
+    localStorage.setItem('listaCompras', JSON.stringify(lista));
+    mostrarListaCompras();
+}
+
+// 14. AL CARGAR LA APP, VERIFICAR SI EL PREMIUM SIGUE ACTIVO
+window.addEventListener('load', () => {
+    if (verificarPremium()) {
+        activarPremiumVisual();
+    }
+});
+
+// 15. Lógica PWA (Instalación)
+let deferredPrompt;
+const btnInstalar = document.getElementById('btnInstalar');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btnInstalar.style.display = 'block';
+});
+
+btnInstalar.addEventListener('click', () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') console.log('App instalada');
+            deferredPrompt = null;
+            btnInstalar.style.display = 'none';
+        });
+    } else {
+        alert('Usa el menú del navegador y selecciona "Agregar a pantalla de inicio"');
+    }
+});
+
+// 16. Función para abrir el escáner (Solo Premium)
+function abrirEscaneo() {
+    if (escaneando) {
+        cerrarEscaneo();
+        return;
+    }
+
+    readerDiv.style.display = 'block';
+    
+    html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_E
+            ]
+        }, 
+        false
+    );
+
+    html5QrcodeScanner.render(onScanSuccess, onScanError);
+    escaneando = true;
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    alert('📷 ¡Código escaneado! ' + decodedText);
+    buscarProductoPorCodigo(decodedText);
+    cerrarEscaneo();
+}
+
+function onScanError(errorMessage) {}
+
+function cerrarEscaneo() {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().catch(err => console.log(err));
+    }
+    readerDiv.style.display = 'none';
+    escaneando = false;
+}
+
+// 17. Función para buscar producto en una API
+async function buscarProductoPorCodigo(codigo) {
+    const apiKey = document.getElementById('apiKeyInput').value;
+    
+    if (!apiKey) {
+        alert('Por favor, ingresa tu API Key en el campo de configuración para buscar el producto automáticamente.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${codigo}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.items && data.items.length > 0) {
+                const producto = data.items[0];
+                alert(`✅ Producto encontrado: ${producto.title}\nPrecio: ${producto.offers ? producto.offers[0].price : 'No disponible'}`);
+            } else {
+                alert('Producto no encontrado en la base de datos.');
+            }
+        } else {
+            alert('Error al buscar el producto.');
+        }
+    } catch (error) {
+        console.error('Error en la API:', error);
+        alert('Error de conexión con la API.');
+    }
+}

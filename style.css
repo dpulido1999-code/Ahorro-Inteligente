@@ -5,6 +5,9 @@
   --card-bg: #ffffff;
   --text-color: #1e293b;
   --border-radius: 12px;
+  --premium-color: #f59e0b;
+  --dark-bg: #0f172a;
+  --dark-card: #1e293b;
 }
 
 * {
@@ -21,6 +24,7 @@ body {
   justify-content: center;
   min-height: 100vh;
   padding: 20px;
+  transition: background 0.3s;
 }
 
 .app-container {
@@ -50,6 +54,7 @@ header p {
   border-radius: var(--border-radius);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   margin-bottom: 15px;
+  transition: background 0.3s;
 }
 
 .card h2 {
@@ -73,19 +78,50 @@ header p {
   color: #475569;
 }
 
-.input-group input {
+.input-group input,
+.input-group select {
   padding: 10px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 1rem;
   outline: none;
+  background: white;
+  color: var(--text-color);
 }
 
-.input-group input:focus {
+.input-group input:focus,
+.input-group select:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
+/* Selector de unidades */
+.unit-selector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.unit-selector button {
+  padding: 6px 12px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.unit-selector button.active {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Botones principales */
 .btn-primary {
   width: 100%;
   padding: 14px;
@@ -104,6 +140,58 @@ header p {
   transform: scale(0.98);
 }
 
+.btn-secondary {
+  width: 100%;
+  padding: 14px;
+  background: #e2e8f0;
+  color: #334155;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+/* Modo Oscuro manual */
+body.dark-mode {
+  background: var(--dark-bg);
+  color: #e2e8f0;
+}
+
+body.dark-mode .card {
+  background: var(--dark-card);
+}
+
+body.dark-mode .card h2 {
+  color: #e2e8f0;
+  border-bottom-color: #475569;
+}
+
+body.dark-mode .input-group label {
+  color: #cbd5e1;
+}
+
+body.dark-mode .input-group input,
+body.dark-mode .input-group select {
+  background: #334155;
+  border-color: #475569;
+  color: white;
+}
+
+body.dark-mode .unit-selector button {
+  background: #334155;
+  color: #cbd5e1;
+  border-color: #475569;
+}
+
+body.dark-mode .unit-selector button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* Resultado */
 .result-card {
   text-align: center;
   border: 2px solid var(--success-color);
@@ -119,4 +207,204 @@ header p {
   font-size: 1.1rem;
   font-weight: bold;
   color: var(--success-color);
+}
+
+/* Estilos Premium */
+.product-card.premium-card {
+  border: 2px solid var(--premium-color);
+}
+
+.badge-premium {
+  font-size: 0.65rem;
+  background: var(--premium-color);
+  color: white;
+  padding: 2px 10px;
+  border-radius: 12px;
+  margin-left: 8px;
+}
+
+/* Candado Premium */
+#premiumProducts {
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.6;
+  position: relative;
+}
+
+.lock-overlay {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  z-index: 10;
+}
+
+.lock-box {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 20px;
+  border-radius: 16px;
+  max-width: 300px;
+  margin: 0 auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.btn-premium {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+/* Botón agregar */
+#addProductBtn {
+  display: none;
+  background: #f1f5f9;
+  color: #334155;
+  border: 2px dashed #cbd5e1;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+#addProductBtn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* Mensaje de bienvenida Premium */
+#premiumWelcome {
+  display: none;
+  background: linear-gradient(135deg, #fef9c3, #fde68a);
+  border: 2px solid #f59e0b;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: bold;
+  color: #92400e;
+  margin-bottom: 15px;
+  font-size: 1rem;
+}
+
+/* Botones ocultos inicialmente */
+#compareAllBtn, #darkModeBtn, #btnEscanear {
+  display: none;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+#compareAllBtn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+#darkModeBtn {
+  background: #334155;
+  color: white;
+}
+
+#btnEscanear {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: white;
+}
+
+/* Escáner */
+#reader {
+  width: 100%;
+  max-width: 400px;
+  margin: 10px auto;
+  display: none;
+}
+
+#apiConfig {
+  background: #f1f5f9;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+/* Historial */
+.history-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+.history-item {
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Lista de compras */
+.shopping-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.shopping-item button {
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Modo Oscuro adicionales */
+body.dark-mode .history-item,
+body.dark-mode .shopping-item {
+  background: #334155;
+  color: white;
+}
+
+body.dark-mode #apiConfig,
+body.dark-mode #addProductBtn {
+  background: #334155;
+  color: white;
+  border-color: #475569;
+}
+
+body.dark-mode #premiumWelcome {
+  background: #78350f;
+  color: #fde68a;
+  border-color: #f59e0b;
+}
+
+body.dark-mode #hotmartBtnPremium {
+  background: #1e293b;
+}
+
+/* Animación */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.result-card, .product-card {
+  animation: fadeIn 0.5s ease-in-out;
 }

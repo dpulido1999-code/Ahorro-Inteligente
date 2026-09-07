@@ -2,7 +2,7 @@
   "name": "Ahorro Inteligente",
   "short_name": "Ahorro App",
   "description": "Compara precios y ahorra en el supermercado",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f1f5f9",
   "theme_color": "#2563eb",
