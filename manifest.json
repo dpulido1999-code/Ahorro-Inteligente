@@ -3,19 +3,20 @@
   "short_name": "Ahorro App",
   "description": "Compara precios y ahorra en el supermercado",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f1f5f9",
   "theme_color": "#2563eb",
   "permissions": ["camera"],
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

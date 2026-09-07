@@ -398,7 +398,7 @@ window.addEventListener('load', () => {
     }
 });
 
-// 15. Lógica PWA (Instalación)
+// 15. Lógica PWA (Instalación) + Generador de iconos
 let deferredPrompt;
 const btnInstalar = document.getElementById('btnInstalar');
 
@@ -408,7 +408,54 @@ window.addEventListener('beforeinstallprompt', (e) => {
     btnInstalar.style.display = 'block';
 });
 
-btnInstalar.addEventListener('click', () => {
+// ⚠️ FUNCIÓN DEFINITIVA PARA GENERAR ICONOS E INSTALAR
+function generarIconosYInstalar() {
+    // Generar el icono con un canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Fondo verde
+    ctx.fillStyle = '#059669';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Ruedas
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(140, 400, 40, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(350, 400, 40, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cuerpo del carrito
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 15;
+    ctx.beginPath();
+    ctx.moveTo(50, 150);
+    ctx.lineTo(120, 150);
+    ctx.lineTo(160, 320);
+    ctx.lineTo(400, 320);
+    ctx.lineTo(440, 200);
+    ctx.stroke();
+
+    // Asa del carrito
+    ctx.beginPath();
+    ctx.moveTo(120, 150);
+    ctx.lineTo(100, 100);
+    ctx.lineTo(60, 100);
+    ctx.stroke();
+
+    // Volante
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(55, 80, 50, 20);
+
+    // Guardar en memoria (para el manifest)
+    const dataURL = canvas.toDataURL('image/png');
+    localStorage.setItem('iconBase64', dataURL);
+
+    // Intentar instalar
     if (deferredPrompt) {
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then((choiceResult) => {
@@ -417,46 +464,104 @@ btnInstalar.addEventListener('click', () => {
             btnInstalar.style.display = 'none';
         });
     } else {
-        alert('Usa el menú del navegador y selecciona "Agregar a pantalla de inicio"');
+        alert("ℹ️ Tu navegador no dio permiso automático. Ve al menú (3 puntos) y selecciona 'Agregar a pantalla de inicio'. El icono ya está generado.");
     }
-});
+}
 
-// 16. Función para abrir el escáner (Con retraso para Android)
+// Conectar el botón a la función
+btnInstalar.addEventListener('click', generarIconosYInstalar);
+
+// 16. FUNCIÓN DEFINITIVA PARA ABRIR LA CÁMARA EN ANDROID
 function abrirEscaneo() {
-    // 🔥 SI NO ES PREMIUM, SE ABRE EL MODAL DE COMPRA
+    // 1. Si no es Premium, se abre el modal de compra
     if (!verificarPremium()) {
         abrirModal();
         return;
     }
 
+    // 2. Si ya está escaneando, se cierra
     if (escaneando) {
         cerrarEscaneo();
         return;
     }
 
-    // Esperar 500ms para que el navegador se "caliente" en Android
+    // 3. Verificar si el navegador soporta la cámara
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("⚠️ Este navegador no soporta acceso a la cámara. Usa Chrome o Firefox actualizado.");
+        return;
+    }
+
+    // 4. Esperar 1 segundo para que Android se estabilice
     setTimeout(() => {
         readerDiv.style.display = 'block';
-        
-        // Usar Scanner (más estable en Android)
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { 
-                fps: 10, 
-                qrbox: { width: 250, height: 250 },
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_E
-                ]
-            }, 
-            false
-        );
 
-        html5QrcodeScanner.render(onScanSuccess, onScanError);
+        // 5. Si existe la API Nativa de Android (BarcodeDetector), usarla. Si no, usar la librería.
+        if ('BarcodeDetector' in window) {
+            usarBarcodeDetectorNativo();
+        } else {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", 
+                { fps: 10, qrbox: { width: 250, height: 250 } }, 
+                false
+            );
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+        }
+        
         escaneando = true;
-    }, 500);
+    }, 1000);
+}
+
+// Función con la API Nativa de Android (BarcodeDetector)
+function usarBarcodeDetectorNativo() {
+    const video = document.createElement('video');
+    video.style.width = '100%';
+    video.setAttribute('playsinline', 'true');
+    
+    // Limpiar el contenedor
+    readerDiv.innerHTML = '';
+    readerDiv.appendChild(video);
+
+    // Configurar el detector con formatos de supermercado
+    const barcodeDetector = new BarcodeDetector({
+        formats: ['ean_13', 'upc_a', 'ean_8', 'upc_e']
+    });
+
+    // Intentar abrir la cámara trasera
+    navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+    }).then((stream) => {
+        video.srcObject = stream;
+        video.play();
+
+        // Escanear cada 500ms
+        const interval = setInterval(async () => {
+            try {
+                const codes = await barcodeDetector.detect(video);
+                if (codes.length > 0) {
+                    clearInterval(interval);
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    const code = codes[0].rawValue;
+                    alert('📷 ¡Código escaneado! ' + code);
+                    buscarProductoPorCodigo(code);
+                    cerrarEscaneo();
+                }
+            } catch (error) {
+                console.error("Error al escanear:", error);
+            }
+        }, 500);
+    }).catch((err) => {
+        // Si falla la cámara trasera, intentar con la frontal
+        navigator.mediaDevices.getUserMedia({
+            video: true
+        }).then((stream) => {
+            video.srcObject = stream;
+            video.play();
+        }).catch((error) => {
+            alert("⚠️ No se pudo abrir la cámara. Verifica tus permisos.");
+            readerDiv.style.display = 'none';
+        });
+    });
 }
 
 function onScanSuccess(decodedText, decodedResult) {
