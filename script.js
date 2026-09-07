@@ -66,7 +66,14 @@ function activarPremiumVisual() {
     const btnCompararPremium = document.getElementById('compareAllBtn');
     if (btnCompararPremium) btnCompararPremium.style.display = 'block';
 
-    btnEscanear.style.display = 'block';
+    // 🔥 ESTA LÍNEA CAMBIA EL BOTÓN DE ESCANEAR DE GRIS A AZUL
+    const btnEscanear = document.getElementById('btnEscanear');
+    if (btnEscanear) {
+        btnEscanear.style.background = 'linear-gradient(135deg, #2563eb, #3b82f6)';
+        btnEscanear.style.color = 'white';
+        btnEscanear.style.border = 'none';
+        btnEscanear.innerText = '📷 Escanear Producto (Premium)';
+    }
 
     const btnCompararGratis = document.getElementById('compareBtnFree');
     if (btnCompararGratis) btnCompararGratis.style.display = 'none';
@@ -398,7 +405,7 @@ window.addEventListener('load', () => {
     }
 });
 
-// 15. Lógica PWA (Instalación) + Generador de iconos
+// 15. Lógica PWA (Instalación)
 let deferredPrompt;
 const btnInstalar = document.getElementById('btnInstalar');
 
@@ -408,54 +415,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
     btnInstalar.style.display = 'block';
 });
 
-// ⚠️ FUNCIÓN DEFINITIVA PARA GENERAR ICONOS E INSTALAR
-function generarIconosYInstalar() {
-    // Generar el icono con un canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-
-    // Fondo verde
-    ctx.fillStyle = '#059669';
-    ctx.fillRect(0, 0, 512, 512);
-
-    // Ruedas
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(140, 400, 40, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(350, 400, 40, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Cuerpo del carrito
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 15;
-    ctx.beginPath();
-    ctx.moveTo(50, 150);
-    ctx.lineTo(120, 150);
-    ctx.lineTo(160, 320);
-    ctx.lineTo(400, 320);
-    ctx.lineTo(440, 200);
-    ctx.stroke();
-
-    // Asa del carrito
-    ctx.beginPath();
-    ctx.moveTo(120, 150);
-    ctx.lineTo(100, 100);
-    ctx.lineTo(60, 100);
-    ctx.stroke();
-
-    // Volante
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(55, 80, 50, 20);
-
-    // Guardar en memoria (para el manifest)
-    const dataURL = canvas.toDataURL('image/png');
-    localStorage.setItem('iconBase64', dataURL);
-
-    // Intentar instalar
+btnInstalar.addEventListener('click', () => {
     if (deferredPrompt) {
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then((choiceResult) => {
@@ -464,12 +424,9 @@ function generarIconosYInstalar() {
             btnInstalar.style.display = 'none';
         });
     } else {
-        alert("ℹ️ Tu navegador no dio permiso automático. Ve al menú (3 puntos) y selecciona 'Agregar a pantalla de inicio'. El icono ya está generado.");
+        alert('ℹ️ Usa el menú del navegador y selecciona "Agregar a pantalla de inicio".');
     }
-}
-
-// Conectar el botón a la función
-btnInstalar.addEventListener('click', generarIconosYInstalar);
+});
 
 // 16. FUNCIÓN DEFINITIVA PARA ABRIR LA CÁMARA EN ANDROID
 function abrirEscaneo() {
@@ -485,23 +442,33 @@ function abrirEscaneo() {
         return;
     }
 
-    // 3. Verificar si el navegador soporta la cámara
+    // 3. Verificar si es PWA instalada (WebView problemático)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        alert("⚠️ Estás usando la versión instalada. Para abrir la cámara, abre esta URL en Chrome normal y acepta el permiso de cámara. Luego podrás volver a instalar.");
+        return;
+    }
+
+    // 4. Verificar si el navegador soporta la cámara
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert("⚠️ Este navegador no soporta acceso a la cámara. Usa Chrome o Firefox actualizado.");
         return;
     }
 
-    // 4. Esperar 1 segundo para que Android se estabilice
+    // 5. Esperar 1 segundo para que Android se estabilice
     setTimeout(() => {
         readerDiv.style.display = 'block';
 
-        // 5. Si existe la API Nativa de Android (BarcodeDetector), usarla. Si no, usar la librería.
+        // 6. Si existe la API Nativa de Android (BarcodeDetector), usarla. Si no, usar la librería.
         if ('BarcodeDetector' in window) {
             usarBarcodeDetectorNativo();
         } else {
             html5QrcodeScanner = new Html5QrcodeScanner(
                 "reader", 
-                { fps: 10, qrbox: { width: 250, height: 250 } }, 
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 },
+                    videoConstraints: { facingMode: "environment" } // Fuerza cámara trasera
+                }, 
                 false
             );
             html5QrcodeScanner.render(onScanSuccess, onScanError);
@@ -515,7 +482,8 @@ function abrirEscaneo() {
 function usarBarcodeDetectorNativo() {
     const video = document.createElement('video');
     video.style.width = '100%';
-    video.setAttribute('playsinline', 'true');
+    video.setAttribute('playsinline', 'true'); // 🔥 CLAVE PARA ANDROID
+    video.setAttribute('muted', 'true'); // Evita problemas de audio
     
     // Limpiar el contenedor
     readerDiv.innerHTML = '';
@@ -528,10 +496,12 @@ function usarBarcodeDetectorNativo() {
 
     // Intentar abrir la cámara trasera
     navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }
+        video: { 
+            facingMode: { ideal: "environment" } // Cámara trasera, con fallback
+        }
     }).then((stream) => {
         video.srcObject = stream;
-        video.play();
+        video.play().catch(e => console.log(e));
 
         // Escanear cada 500ms
         const interval = setInterval(async () => {
@@ -558,7 +528,7 @@ function usarBarcodeDetectorNativo() {
             video.srcObject = stream;
             video.play();
         }).catch((error) => {
-            alert("⚠️ No se pudo abrir la cámara. Verifica tus permisos.");
+            alert("⚠️ No se pudo abrir la cámara. Verifica que el permiso de cámara esté en 'Permitir' en tu navegador.");
             readerDiv.style.display = 'none';
         });
     });
