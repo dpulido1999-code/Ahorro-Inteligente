@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparador de Precios - Ahorro Inteligente</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#059669">
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background: #f1f5f9; color: #1e293b; transition: 0.3s; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .app-container { max-width: 480px; width: 100%; margin: 0 auto; padding: 15px; }
+    
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f172a; color: #e2e8f0; }
+      .card { background: #1e293b !important; color: #e2e8f0 !important; }
+      input { background: #334155 !important; color: white !important; border-color: #475569 !important; }
+      .unit-selector button { background: #334155 !important; color: #cbd5e1 !important; border-color: #475569 !important; }
+      .unit-selector button.active { background: #2563eb !important; color: white !important; border-color: #2563eb !important; }
+      .history-title { color: #cbd5e1 !important; }
+      #clearHistoryBtn { background: #450a0a !important; color: #fca5a5 !important; }
+      #addProductBtn { background: #334155 !important; color: white !important; border-color: #475569 !important; }
+      #premiumWelcome { background: #78350f !important; color: #fde68a !important; border-color: #f59e0b !important; }
+      #hotmartBtnPremium { background: #1e293b !important; }
+      #chatContainer { background: #1e293b !important; }
+      #favoritesContainer { background: #1e293b !important; }
+    }
+
+    body.dark-mode { background: #0f172a; color: #e2e8f0; }
+    body.dark-mode .card { background: #1e293b !important; color: #e2e8f0 !important; }
+    body.dark-mode input, body.dark-mode select { background: #334155 !important; color: white !important; border-color: #475569 !important; }
+    body.dark-mode .history-item { background: #1e293b; color: white; }
+    body.dark-mode #chatContainer { background: #1e293b !important; }
+    body.dark-mode #favoritesContainer { background: #1e293b !important; }
+
+    header { text-align: center; margin-bottom: 20px; }
+    header h1 { color: #059669; font-size: 1.8rem; }
+    header p { color: #64748b; font-size: 0.9rem; }
+
+    .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    
+    .btn-primary { background: #059669; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
+    .btn-secondary { background: #e2e8f0; color: #334155; border: none; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; }
+
+    .input-group { margin-bottom: 12px; }
+    .input-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; }
+    input[type="number"], input[type="text"] { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none; transition: border 0.2s; }
+    input[type="number"]:focus, input[type="text"]:focus { border-color: #2563eb; }
+
+    .unit-selector { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .unit-selector button { padding: 6px 12px; border: 2px solid #cbd5e1; border-radius: 6px; background: white; font-size: 0.75rem; font-weight: 600; cursor: pointer; color: #64748b; transition: all 0.2s; }
+    .unit-selector button.active { border-color: #2563eb; background: #2563eb; color: white; }
+
+    .product-card.premium-card { border: 2px solid #f59e0b; }
+    .badge-premium { font-size: 0.65rem; background: #f59e0b; color: white; padding: 2px 10px; border-radius: 12px; margin-left: 8px; }
+    
+    #premiumProducts { filter: blur(4px); pointer-events: none; user-select: none; opacity: 0.6; position: relative; }
+    .lock-overlay { position: absolute; top: 40%; left: 0; width: 100%; text-align: center; z-index: 10; }
+    .lock-box { background: rgba(255,255,255,0.9); padding: 20px; border-radius: 16px; max-width: 300px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .btn-premium { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+
+    #addProductBtn { display: none; background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; padding: 12px; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 15px; }
+    #addProductBtn:hover { border-color: #2563eb; color: #2563eb; }
+
+    #premiumWelcome { display: none; background: linear-gradient(135deg, #fef9c3, #fde68a); border: 2px solid #f59e0b; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; color: #92400e; margin-bottom: 15px; font-size: 1rem; }
+
+    .result-card.hidden { display: none; }
+    #resultText { font-size: 1.1rem; font-weight: bold; margin: 15px 0; text-align: center; }
+    .winner-box { border: 3px solid #059669; background: #ecfdf5; padding: 15px; border-radius: 10px; }
+    .highlight-savings { text-align: center; color: #059669; font-weight: bold; margin-top: 10px; }
+
+    .history-title { font-size: 1.2rem; font-weight: bold; }
+    .history-item { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    @media (prefers-color-scheme: dark) { .history-item { background: #1e293b; color: white; } }
+    
+    #compareAllBtn { display: none; width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; margin-bottom: 10px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    #darkModeBtn { display: block; width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; margin-bottom: 10px; background: #334155; color: white; }
+    #hotmartBtnPremium { display: none; text-align: center; margin-top: 20px; padding: 10px; background: #f1f5f9; border-radius: 12px; }
+
+    #btnAsistente { display: none; width: 100%; padding: 14px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; margin-bottom: 10px; }
+    #chatContainer { display: none; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 2px solid #8b5cf6; }
+    .chat-message { margin-bottom: 10px; padding: 10px; border-radius: 10px; max-width: 85%; }
+    .chat-message.bot { background: #e2e8f0; color: #1e293b; margin-right: auto; }
+    .chat-message.user { background: #8b5cf6; color: white; margin-left: auto; }
+    .chat-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .chat-options button { padding: 8px 12px; border: 2px solid #8b5cf6; border-radius: 12px; background: white; color: #6d28d9; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+    .chat-options button:hover { background: #8b5cf6; color: white; }
+
+    #btnAnalisis { display: block; width: 100%; padding: 14px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; margin-bottom: 10px; }
+    #btnGuardarFavorito { display: none; width: 100%; padding: 14px; background: linear-gradient(135deg, #ec4899, #db2777); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; margin-bottom: 10px; }
+    #btnExportar { display: none; width: 100%; padding: 14px; background: linear-gradient(135deg, #14b8a6, #0d9488); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; margin-bottom: 10px; }
+    #favoritesContainer { display: none; background: #fdf2f8; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 2px solid #ec4899; }
+    .favorite-item { background: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .favorite-item button { background: #fee2e2; color: #dc2626; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
+    .favorite-item .cargar-btn { background: #ec4899; color: white; margin-right: 5px; }
+
+    #btnCompararHistorial { display: none; width: 100%; padding: 12px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; margin: 10px 0; }
+
+    /* 🔥 FOOTER CORREGIDO */
+    footer { max-width: 480px; width: 100%; margin: 30px auto 15px auto; padding: 20px 15px; border-top: 1px solid #cbd5e1; font-size: 0.85rem; color: #64748b; text-align: center; display: block; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <header>
+      <h1>🏷️ Ahorro Inteligente</h1>
+      <p>Compara y descubre cuál te conviene más.</p>
+    </header>
+
+    <button id="btnInstalar" style="display: block; width: 100%; padding: 12px; background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 14px; margin-bottom: 15px; cursor: pointer;">
+      📥 Instalar App en el celular
+    </button>
+
+    <main>
+      <div id="premiumWelcome">
+        💎 ¡Gracias por ser Premium! Tu suscripción está activa por 1 mes.
+      </div>
+
+      <!-- PRODUCTO A -->
+      <section class="card product-card">
+        <h2>🛒 Producto A</h2>
+        <div class="input-group">
+          <label for="nameA">Nombre o promoción (opcional):</label>
+          <input type="text" id="nameA" placeholder="Ej: Leche Alpina 2x1">
+        </div>
+        <div class="input-group">
+          <label for="priceA">Precio ($):</label>
+          <input type="number" id="priceA" placeholder="Ej: 15000" step="any">
+        </div>
+        <div class="input-group">
+          <label for="qtyA">Cantidad:</label>
+          <input type="number" id="qtyA" placeholder="Ej: 300" step="any">
+        </div>
+        <div class="input-group">
+          <label for="tiendaA">Tienda:</label>
+          <input type="text" id="tiendaA" placeholder="Ej: D1, Éxito..." list="tiendasLista" value="D1">
+        </div>
+        <div class="input-group">
+          <label>Unidad de medida:</label>
+          <div class="unit-selector" id="unitA">
+            <button data-unit="unidades">📦 Unidades</button>
+            <button data-unit="gramos">⚖️ Gramos (g)</button>
+            <button data-unit="kilogramos" class="active">⚖️ Kilogramos (kg)</button>
+            <button data-unit="mililitros">💧 Mililitros (ml)</button>
+            <button data-unit="litros">💧 Litros (L)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRODUCTO B -->
+      <section class="card product-card">
+        <h2>🛒 Producto B</h2>
+        <div class="input-group">
+          <label for="nameB">Nombre o promoción (opcional):</label>
+          <input type="text" id="nameB" placeholder="Ej: Leche Colanta 10% dcto">
+        </div>
+        <div class="input-group">
+          <label for="priceB">Precio ($):</label>
+          <input type="number" id="priceB" placeholder="Ej: 9500" step="any">
+        </div>
+        <div class="input-group">
+          <label for="qtyB">Cantidad:</label>
+          <input type="number" id="qtyB" placeholder="Ej: 150" step="any">
+        </div>
+        <div class="input-group">
+          <label for="tiendaB">Tienda:</label>
+          <input type="text" id="tiendaB" placeholder="Ej: D1, Éxito..." list="tiendasLista" value="D1">
+        </div>
+        <div class="input-group">
+          <label>Unidad de medida:</label>
+          <div class="unit-selector" id="unitB">
+            <button data-unit="unidades">📦 Unidades</button>
+            <button data-unit="gramos" class="active">⚖️ Gramos (g)</button>
+            <button data-unit="kilogramos">⚖️ Kilogramos (kg)</button>
+            <button data-unit="mililitros">💧 Mililitros (ml)</button>
+            <button data-unit="litros">💧 Litros (L)</button>
+          </div>
+        </div>
+      </section>
+
+      <div style="position: relative;">
+        <div id="premiumProducts">
+          
+          <section class="card product-card premium-card">
+            <h2>🛒 Producto C <span class="badge-premium">⭐ Premium</span></h2>
+            <div class="input-group">
+              <label for="nameC">Nombre o promoción:</label>
+              <input type="text" id="nameC" placeholder="Ej: Arroz Diana 20% dcto">
+            </div>
+            <div class="input-group">
+              <label for="priceC">Precio ($):</label>
+              <input type="number" id="priceC" placeholder="Ej: 12000" step="any">
+            </div>
+            <div class="input-group">
+              <label for="qtyC">Cantidad:</label>
+              <input type="number" id="qtyC" placeholder="Ej: 200" step="any">
+            </div>
+            <div class="input-group">
+              <label for="tiendaC">Tienda:</label>
+              <input type="text" id="tiendaC" placeholder="Ej: D1, Éxito..." list="tiendasLista" value="D1">
+            </div>
+            <div class="input-group">
+              <label>Unidad de medida:</label>
+              <div class="unit-selector" id="unitC">
+                <button data-unit="unidades">📦 Unidades</button>
+                <button data-unit="gramos">⚖️ Gramos (g)</button>
+                <button data-unit="kilogramos" class="active">⚖️ Kilogramos (kg)</button>
+                <button data-unit="mililitros">💧 Mililitros (ml)</button>
+                <button data-unit="litros">💧 Litros (L)</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card product-card premium-card">
+            <h2>🛒 Producto D <span class="badge-premium">⭐ Premium</span></h2>
+            <div class="input-group">
+              <label for="nameD">Nombre o promoción:</label>
+              <input type="text" id="nameD" placeholder="Ej: Aceite Girasol 2x1">
+            </div>
+            <div class="input-group">
+              <label for="priceD">Precio ($):</label>
+              <input type="number" id="priceD" placeholder="Ej: 18000" step="any">
+            </div>
+            <div class="input-group">
+              <label for="qtyD">Cantidad:</label>
+              <input type="number" id="qtyD" placeholder="Ej: 350" step="any">
+            </div>
+            <div class="input-group">
+              <label for="tiendaD">Tienda:</label>
+              <input type="text" id="tiendaD" placeholder="Ej: D1, Éxito..." list="tiendasLista" value="D1">
+            </div>
+            <div class="input-group">
+              <label>Unidad de medida:</label>
+              <div class="unit-selector" id="unitD">
+                <button data-unit="unidades">📦 Unidades</button>
+                <button data-unit="gramos">⚖️ Gramos (g)</button>
+                <button data-unit="kilogramos" class="active">⚖️ Kilogramos (kg)</button>
+                <button data-unit="mililitros">💧 Mililitros (ml)</button>
+                <button data-unit="litros">💧 Litros (L)</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card product-card premium-card">
+            <h2>🛒 Producto E <span class="badge-premium">⭐ Premium</span></h2>
+            <div class="input-group">
+              <label for="nameE">Nombre o promoción:</label>
+              <input type="text" id="nameE" placeholder="Ej: Café Sello Rojo 15% dcto">
+            </div>
+            <div class="input-group">
+              <label for="priceE">Precio ($):</label>
+              <input type="number" id="priceE" placeholder="Ej: 25000" step="any">
+            </div>
+            <div class="input-group">
+              <label for="qtyE">Cantidad:</label>
+              <input type="number" id="qtyE" placeholder="Ej: 500" step="any">
+            </div>
+            <div class="input-group">
+              <label for="tiendaE">Tienda:</label>
+              <input type="text" id="tiendaE" placeholder="Ej: D1, Éxito..." list="tiendasLista" value="D1">
+            </div>
+            <div class="input-group">
+              <label>Unidad de medida:</label>
+              <div class="unit-selector" id="unitE">
+                <button data-unit="unidades">📦 Unidades</button>
+                <button data-unit="gramos">⚖️ Gramos (g)</button>
+                <button data-unit="kilogramos" class="active">⚖️ Kilogramos (kg)</button>
+                <button data-unit="mililitros">💧 Mililitros (ml)</button>
+                <button data-unit="litros">💧 Litros (L)</button>
+              </div>
+            </div>
+          </section>
+
+          <div id="dynamicContainer"></div>
+
+        </div>
+
+        <div class="lock-overlay">
+          <div class="lock-box">
+            <h3 style="margin-bottom: 10px;">🔒 Función Premium</h3>
+            <p style="font-size: 0.85rem; margin-bottom: 15px;">Desbloquea los productos C, D y E con la versión Premium.</p>
+            <button class="btn-premium" onclick="abrirModal()">⭐ Desbloquear ahora</button>
+          </div>
+        </div>
+      </div>
+
+      <button id="addProductBtn" onclick="agregarProducto()">➕ Agregar otro producto</button>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin: 15px 0;">
+        <button id="compareBtnFree" class="btn-primary">🔄 Comparar Productos</button>
+        <button id="compareAllBtn" onclick="compararPremium()">📊 Comparar Todos (Premium)</button>
+        <button id="clearBtn" class="btn-secondary">🗑️ Limpiar Todo</button>
+        <button id="darkModeBtn" onclick="toggleDarkMode()">🌙 Modo Oscuro</button>
+        <button id="btnAsistente" onclick="abrirAsistente()">🤖 Asistente de Ahorro (Premium)</button>
+        <button id="btnAnalisis" onclick="mostrarAnalisis()">📊 Análisis Inteligente (5 gratis)</button>
+        <button id="btnGuardarFavorito" onclick="guardarComparacionFavorita()">💾 Guardar Comparación (Premium)</button>
+        <button id="btnExportar" onclick="abrirModalExportar()">📤 Exportar / Compartir (Premium)</button>
+      </div>
+
+      <!-- MODAL EXPORTAR -->
+      <div id="exportModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: white; border-radius: 24px; max-width: 400px; width: 100%; padding: 25px; position: relative;">
+          <button onclick="cerrarModalExportar()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer;">✕</button>
+          <h2 style="text-align: center; color: #0d9488; margin-bottom: 20px;">📤 Exportar Resultado</h2>
+          <p style="text-align: center; font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">Elige el formato para compartir tu comparación:</p>
+          
+          <button onclick="exportarComoTexto()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #25D366, #128C7E); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-bottom: 10px;">
+            📱 Texto (WhatsApp)
+          </button>
+          
+          <button onclick="exportarComoImagen()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-bottom: 10px;">
+            🖼️ Imagen (PNG)
+          </button>
+          
+          <button onclick="exportarComoPDF()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer;">
+            📄 PDF
+          </button>
+        </div>
+      </div>
+
+      <div id="favoritesContainer">
+        <h3 style="text-align: center; color: #db2777; margin-bottom: 15px;">💾 Mis Comparaciones Guardadas</h3>
+        <div id="favoritesList"></div>
+      </div>
+
+      <div id="chatContainer">
+        <h3 style="text-align: center; color: #6d28d9; margin-bottom: 15px;">🤖 Asistente de Ahorro</h3>
+        <div id="chatMessages"></div>
+        <div class="chat-options" id="chatOptions"></div>
+      </div>
+
+      <section id="resultCard" class="card result-card hidden">
+        <h3 id="resultTitle" style="text-align: center;">Resultado</h3>
+        <div id="resultText"></div>
+        <div id="savingsText" class="highlight-savings"></div>
+      </section>
+
+      <!-- HISTORIAL -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+        <h3 class="history-title" style="margin-top: 0;">📜 Historial Reciente</h3>
+        <button id="clearHistoryBtn" style="background: #fee2e2; color: #dc2626; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 0.85rem; cursor: pointer;">🗑️ Limpiar</button>
+      </div>
+
+      <button id="btnCompararHistorial" onclick="compararHistorialSeleccionado()">📊 Comparar compras seleccionadas</button>
+
+      <div id="historyContainer"></div>
+
+      <!-- ANUNCIO PROMOCIONAL -->
+      <section id="miAppAd" class="card" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe); border: 2px solid #3b82f6; margin-top: 20px; text-align: center;">
+        <h3 style="color: #1e40af; font-size: 1.2rem; margin-bottom: 8px;">📱 ¡Conoce "Ahorro Inteligente"!</h3>
+        <p style="font-size: 0.95rem; color: #1e3a8a; margin-bottom: 12px;">
+          La app que te ayuda a <strong>ahorrar dinero en cada compra</strong>. 
+          Compara precios, encuentra la tienda más barata y ahorra hasta un <strong>30% mensual</strong>.
+        </p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px;">
+          <span style="font-size: 0.85rem; background: white; padding: 6px 12px; border-radius: 12px; color: #1e40af; font-weight: bold;">✅ Comparar precios</span>
+          <span style="font-size: 0.85rem; background: white; padding: 6px 12px; border-radius: 12px; color: #1e40af; font-weight: bold;">✅ Asistente IA</span>
+          <span style="font-size: 0.85rem; background: white; padding: 6px 12px; border-radius: 12px; color: #1e40af; font-weight: bold;">✅ Sin límites</span>
+        </div>
+        <button onclick="compartirApp()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-bottom: 8px;">
+          📤 Compartir con un amigo
+        </button>
+        <button onclick="abrirModal()" style="width: 100%; padding: 12px; background: white; color: #1e40af; border: 2px solid #3b82f6; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer;">
+          ⭐ Hacerme Premium
+        </button>
+      </section>
+
+      <!-- PUBLICIDAD HOTMART (solo gratis) -->
+      <section id="hotmartAd" class="card" style="background: linear-gradient(135deg, #fef9c3, #fde68a); border: 2px solid #f59e0b; margin-top: 20px; text-align: center;">
+        <h3 style="color: #92400e; font-size: 1.1rem;">📚 Ahorra aún más con mi Guía</h3>
+        <p style="font-size: 0.9rem; color: #78350f; margin-bottom: 12px;">Descubre las mejores estrategias para ahorrar en el supermercado.</p>
+        <img src="qr-hotmart.png" alt="Código QR" style="width: 150px; height: 150px; border-radius: 12px; margin-bottom: 10px;">
+        <p style="font-size: 0.8rem; color: #92400e;">💰 Precio: <strong>$5.99 USD</strong></p>
+      </section>
+
+      <!-- BOTÓN HOTMART PREMIUM -->
+      <div id="hotmartBtnPremium" style="text-align: center; margin-top: 20px; padding: 10px; background: #f1f5f9; border-radius: 12px;">
+        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">💎 Como eres Premium, aquí tienes un extra opcional:</p>
+        <a href="https://go.hotmart.com/S107399418V?dp=1" target="_blank" style="display: inline-block; padding: 12px 20px; background: #f59e0b; color: white; border-radius: 8px; text-decoration: none; font-weight: bold;">📚 Comprar Guía ($5.99 USD)</a>
+      </div>
+
+    </main>
+  </div>
+
+  <datalist id="tiendasLista">
+    <option value="D1">
+    <option value="Éxito">
+    <option value="Carulla">
+    <option value="Olímpica">
+    <option value="Walmart">
+    <option value="Makro">
+    <option value="Jumbo">
+    <option value="Justo & Bueno">
+    <option value="Ara">
+    <option value="Superinter">
+    <option value="La 14">
+    <option value="Mercamio">
+  </datalist>
+
+  <!-- MODAL PREMIUM (con QR completo sin zoom) -->
+  <div id="premiumModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 20px; overflow-y: auto;">
+    <div style="background: white; border-radius: 24px; max-width: 450px; width: 100%; padding: 25px; position: relative; margin: 20px 0;">
+      <button id="closeModal" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 28px; cursor: pointer;">✕</button>
+      
+      <h2 style="text-align: center; color: #f59e0b; margin-bottom: 10px;">⭐ Premium</h2>
+      <p style="text-align: center; margin: 10px 0; font-size: 0.95rem; color: #475569;">Desbloquea <strong>análisis ilimitados</strong>, <strong>asistente de ahorro</strong>, <strong>exportar PDF/Imagen</strong> y más.</p>
+      
+      <div style="text-align: center; font-size: 2.5rem; font-weight: 800; color: #1e293b; margin-bottom: 5px;">$2.99 USD</div>
+      <p style="text-align: center; font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">(~$12.000 COP) / mes</p>
+      
+      <!-- INSTRUCCIONES DE PAGO CON QR COMPLETO -->
+      <div style="background: #fef9c3; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 15px 0; text-align: center;">
+        <h4 style="color: #92400e; margin-bottom: 15px; font-size: 1rem;">📲 Paga con Nequi o Bre-B:</h4>
+        
+        <div style="text-align: center; margin: 10px 0 15px 0;">
+          <img src="qr-nequi.png" alt="QR de Pago" style="width: 280px; height: auto; border-radius: 12px; background: white; padding: 8px; border: 2px solid #f59e0b; display: block; margin: 0 auto;">
+        </div>
+        
+        <p style="font-size: 0.9rem; color: #78350f; line-height: 1.6; margin: 0;">
+          1. Abre tu app Nequi o tu banco<br>
+          2. Escanea el QR o usa la Llave: <strong>@NEQUIDAV3150</strong><br>
+          3. Paga <strong>$12.000 COP</strong><br>
+          4. Envía el comprobante a:<br>
+          <strong style="color: #059669;">dpulido1999@gmail.com</strong><br>
+          5. Recibirás tu <strong>código de activación</strong>
+        </p>
+      </div>
+      
+      <!-- CAMPO DE CÓDIGO -->
+      <div style="margin: 20px 0;">
+        <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: #1e293b;">🔑 Ingresa tu código de activación:</label>
+        <input type="text" id="codigoPremium" placeholder="Ej: AHORRO-SEP26" style="width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; font-size: 1rem; text-transform: uppercase; outline: none;">
+      </div>
+      
+      <button onclick="activarConCodigo()" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer;">
+        ✅ Activar Premium
+      </button>
+      
+      <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 10px;">Al activar confirmas haber pagado la suscripción mensual.</p>
+    </div>
+  </div>
+
+  <!-- FOOTER CON ENLACES A POLÍTICAS -->
+  <footer>
+    <p style="margin-bottom: 10px;">© 2026 Ahorro Inteligente - Todos los derechos reservados</p>
+    <p style="margin: 0;">
+      <a href="privacidad.html" style="color: #2563eb; text-decoration: none; margin: 0 8px;">Política de Privacidad</a> · 
+      <a href="terminos.html" style="color: #2563eb; text-decoration: none; margin: 0 8px;">Términos y Condiciones</a>
+    </p>
+  </footer>
+
+  <!-- Sonido y librerías -->
+  <audio id="successSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
